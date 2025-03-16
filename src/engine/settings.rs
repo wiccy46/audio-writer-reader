@@ -6,8 +6,8 @@ pub struct AudioEngineSettings {
     pub input_config: cpal::StreamConfig,
     pub output_device: cpal::Device,
     pub output_config: cpal::StreamConfig,
-    pub num_input_channels: usize,
-    pub num_output_channels: usize,
+    pub num_input_channels: u16,
+    pub num_output_channels: u16,
     pub sample_rate: u32,
     pub buffer_size: u32,
 }
@@ -15,12 +15,29 @@ pub struct AudioEngineSettings {
 impl AudioEngineSettings {
     pub fn new(
         input_device: cpal::Device, 
-        input_config: cpal::StreamConfig,
         output_device: cpal::Device,
-        output_config: cpal::StreamConfig,
+        input_channels: u16,
+        output_channels: u16,
     ) -> Self {
-        let num_input_channels = input_config.channels as usize;
-        let num_output_channels = output_config.channels as usize;
+        let mut input_config = input_device.default_input_config().unwrap().config();
+        let mut output_config = output_device.default_output_config().unwrap().config();
+
+        let num_input_channels = input_config.channels as u16;
+        let num_output_channels = output_config.channels as u16;
+
+        if input_channels > 0 && input_channels <= num_input_channels {
+            input_config.channels = input_channels;
+        } else {
+            log::warn!("Invalid input channels {}. Using maximum available: {}", input_channels, num_input_channels);
+            input_config.channels = num_input_channels;
+        }
+
+        if output_channels > 0 && output_channels <= num_output_channels {
+            output_config.channels = output_channels;
+        } else {
+            log::warn!("Invalid output channels {}. Using maximum available: {}", output_channels, num_output_channels);
+            output_config.channels = num_output_channels;
+        }
         
         Self {
             input_device,
